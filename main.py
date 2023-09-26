@@ -375,7 +375,7 @@ def main(link, categories):
                         break
                     except: print("didn't find error")
                     try:
-                        av = driver.find_element(By.XPATH, '//*[@value="Remove"]')
+                        av = driver.find_element(By.CSS_SELECTOR, 'button[class="btn-remove button js-form-submit form-submit btn js-remove-pack-btn"]')
                         check_for_element(driver, '//a[@href="/en/cart"]', click=True, xpath=True)
                         driver.get('https://tickets.rugbyworldcup.com/en/cart')
                         data, fs = sf.read('noti.wav', dtype='float32')  
@@ -407,7 +407,8 @@ def main(link, categories):
                         time.sleep(1200)
                         driver.get(link)
                         continue
-                    except:
+                    except Exception as e:
+                        print(e)
                         driver.get(link)
                         continue
 
