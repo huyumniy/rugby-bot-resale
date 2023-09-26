@@ -114,9 +114,9 @@ def selenium_connect():
     options.add_argument('--ignore-certificate-errors')
     options.add_argument('--lang=EN')
     #pergfan:6ofKZOXwL7qSTGNZ@proxy.packetstream.io:31112
-    proxy = choose_random_proxy(read_proxy_file('./proxies.txt'))
-    proxy_extension = ProxyExtension(*proxy)
-    options.add_argument(f"--load-extension={proxy_extension.directory},D:\\projects\\rugby-bot-resale\\NopeCHA")
+    # proxy = choose_random_proxy(read_proxy_file('./proxies.txt'))
+    # proxy_extension = ProxyExtension(*proxy)
+    options.add_argument(f"--load-extension=D:\\projects\\rugby-bot-resale\\NopeCHA")
 
     prefs = {"credentials_enable_service": False,
         "profile.password_manager_enabled": False}
@@ -131,10 +131,9 @@ def selenium_connect():
     screen_width, screen_height = driver.execute_script(
         "return [window.screen.width, window.screen.height];")
     
-    # desired_width = int(screen_width / 2)
-    # desired_height = int(screen_height / 3)
-    # driver.set_window_position(0, 0)
-    # driver.set_window_size(desired_width, screen_height)
+    desired_width = int(screen_width / 2)
+    driver.set_window_position(0, 0)
+    driver.set_window_size(desired_width, screen_height)
     driver.get('https://nopecha.com/setup#sub_1NnGb4CRwBwvt6ptDqqrDlul|enabled=true|disabled_hosts=%5B%5D|hcaptcha_auto_open=true|hcaptcha_auto_solve=true|hcaptcha_solve_delay=true|hcaptcha_solve_delay_time=3000|recaptcha_auto_open=true|recaptcha_auto_solve=true|recaptcha_solve_delay=true|recaptcha_solve_delay_time=1000|recaptcha_solve_method=Image|funcaptcha_auto_open=true|funcaptcha_auto_solve=true|funcaptcha_solve_delay=true|funcaptcha_solve_delay_time=0|awscaptcha_auto_open=true|awscaptcha_auto_solve=true|awscaptcha_solve_delay=true|awscaptcha_solve_delay_time=0|textcaptcha_auto_solve=true|textcaptcha_solve_delay=true|textcaptcha_solve_delay_time=0|textcaptcha_image_selector=|textcaptcha_input_selector=')
     return driver
 
@@ -179,8 +178,7 @@ def check_for_element(driver, selector, click=False, xpath=False):
   except: return False
 
 
-def wait_for_cart(driver):
-    global ADS, USER_NAME, USER, PWD
+def wait_for_cart(driver, email, password):
     data = []
     try:
         try:
@@ -210,8 +208,8 @@ def wait_for_cart(driver):
             cookies = driver.get_cookies()
             cookies_json = json.dumps(cookies)
             data.append({"title": title.text, 'price': price.text,
-                    "quantity": quantity.text, 'seat-content': seats.text, 'user': USER_NAME,
-                    'category': category.text, "account_name": USER, "account_password": PWD})
+                    "quantity": quantity.text, 'seat-content': seats.text, 'user': 'general',
+                    'category': category.text, "account_name": email, "account_password": password})
         return data
     except:
         return False
@@ -324,7 +322,6 @@ def get_random_email_and_password(file_path):
 def main(link, categories):
     driver = selenium_connect()
     email, password = get_random_email_and_password('./accounts.txt')
-    print(email, password)
     while True:
         driver.get(link)
         while True:
@@ -360,7 +357,7 @@ def main(link, categories):
                 for key in categories.keys():
                     if formatted_category == key: yn.append(formatted_category)
                 if yn == []: continue 
-                if formatted_ticket >= categories[formatted_category]:
+                if formatted_ticket >= int(categories[formatted_category]):
                     try:
                         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@class="resale-listing-details"]//*[@type="submit"]')))
                         button = driver.find_element(By.XPATH, '//*[@class="resale-listing-details"]//*[@type="submit"]')
@@ -381,7 +378,7 @@ def main(link, categories):
                         data, fs = sf.read('noti.wav', dtype='float32')  
                         sd.play(data, fs)
                         status = sd.wait()
-                        data = wait_for_cart(driver)
+                        data = wait_for_cart(driver, email, password)
                         try:
                             json_data = json.dumps(data)
                             
@@ -419,7 +416,6 @@ def main(link, categories):
 if __name__ == "__main__":
     matches_data = read_excel("./r.xlsx")
     threads = []
-    
     option = input('Choose one option [ONE|ALL]: ')
     if option in ["all", "ALL"]: 
         for row in matches_data:
@@ -431,10 +427,10 @@ if __name__ == "__main__":
                 if pd.notna(value): types.append(value)
             if types == []: continue
             match = row["match"]
-            
             thread = threading.Thread(target=main, args=(link, categories))
             thread.start()
             threads.append(thread)
+
 
             delay = random.uniform(5, 10)
             time.sleep(delay)
