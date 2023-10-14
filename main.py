@@ -18,8 +18,6 @@ from pprint import pprint
 import requests
 import re
 import sys, os
-
-
 yn = input('packetstream? [y/n]\n')
 if yn.lower() == 'n':
     PROXY = input('Введіть проксі в форматі: ip:port:login:pass\n').split(':')
@@ -379,6 +377,7 @@ def get_random_email_and_password(file_path):
 def main(link, categories):
     driver = selenium_connect()
     email, password = get_random_email_and_password('./accounts.txt')
+    print(email, password)
     while True:
         if not alert(driver, 'https://tickets.rugbyworldcup.com/en/user/login'): continue
         while True:
@@ -396,7 +395,6 @@ def main(link, categories):
         while True:
             if check_for_403(driver): time.sleep(30)
             else: break
-        wait_for_element(driver, '#onetrust-accept-btn-handler', wait=3, click=True)
         if "https://tickets.rugbyworldcup.com/en/user/login" in driver.current_url: login_page(driver, email, password)
         check_for_element(driver, '//*[@data-filter="category"]', click=True, xpath=True)
         check_for_element(driver, '//*[@class="filter-wrapper info-category"]//label[contains(text(),"Select all")]|//*[@class="filter-wrapper info-category"]//label[contains(text(),"Unselect all")]', click=True, xpath=True)
@@ -417,6 +415,9 @@ def main(link, categories):
             else: break
         try:
             tickets = driver.find_elements(By.CSS_SELECTOR, 'tr[role="row"]')
+            if tickets == []:
+                time.sleep(3)
+                continue
             for ticket in tickets:
                 ticket.click()
                 raw_category = ticket.find_element(By.CSS_SELECTOR, 'td > div.pack-row-left > span.category-info').text
@@ -451,7 +452,7 @@ def main(link, categories):
                         av = driver.find_element(By.XPATH, '//div[@class="actions"]/*[@value="Remove"]')
                         check_for_element(driver, '//a[@href="/en/cart"]', click=True, xpath=True)
                         while True:
-                            if not alert(driver, link): continue
+                            if not alert(driver, "https://tickets.rugbyworldcup.com/en/cart"): continue
                             break
                         data, fs = sf.read('noti.wav', dtype='float32')  
                         sd.play(data, fs)
@@ -492,7 +493,7 @@ def main(link, categories):
 if __name__ == "__main__":
     matches_data = read_excel("./r.xlsx")
     threads = []
-    option = input('Choose one option [ONE|ALL]: ')
+    option = input('Choose one option [ONE|OPT]: ')
     if option in ["all", "ALL"]: 
         for row in matches_data:
             link = row["link"]
@@ -512,7 +513,7 @@ if __name__ == "__main__":
             time.sleep(delay)
         for thread in threads:
             thread.join()
-    elif option in ['one', 'ONE']:
+    elif option in ['opt', 'OPT']:
         for row_index in range(len(matches_data)):
             link = matches_data[row_index]["link"]
             if not pd.notna(link): continue
@@ -523,9 +524,15 @@ if __name__ == "__main__":
             if types == []: continue
             match = matches_data[row_index]["match"]
             print(row_index, match)
-        row_index = input('Index: ')
-        link = matches_data[int(row_index)]['link']
-        categories = matches_data[int(row_index)]['categories']
-        thread = threading.Thread(target=main, args=(link,categories))
-        thread.start()
-        threads.append(thread)
+        row_indexes= input('Indexes (separated by + symbol): ').split(' + ')
+        for row_index in range(len(row_indexes)):
+            link = matches_data[int(row_index)]['link']
+            categories = matches_data[int(row_index)]['categories']
+            thread = threading.Thread(target=main, args=(link,categories))
+            thread.start()
+            threads.append(thread)
+
+            delay = random.uniform(5, 10)
+            time.sleep(delay)
+        for thread in threads:
+            thread.join()
