@@ -18,12 +18,10 @@ from pprint import pprint
 import requests
 import re
 import sys, os
-yn = input('packetstream? [y/n]\n')
-if yn.lower() == 'n':
-    PROXY = input('Введіть проксі в форматі: ip:port:login:pass\n').split(':')
-    PROXY[1] = int(PROXY[1])
-elif yn.lower() == 'y': 
-    PROXY = ['proxy.packetstream.io', 31112, 'pergfan', input('Введіть пароль для packetstream\n')]
+
+PROXY = input('Введіть проксі в форматі: ip:port:login:pass\n').split(':')
+PROXY[1] = int(PROXY[1])
+
 
 class ProxyExtension:
     manifest_json = """
@@ -379,41 +377,43 @@ def main(link, categories):
     email, password = get_random_email_and_password('./accounts.txt')
     print(email, password)
     while True:
-        if not alert(driver, 'https://tickets.rugbyworldcup.com/en/user/login'): continue
-        while True:
-            if check_for_captcha(driver): time.sleep(5)
-            else: break
-        while True:
-            if check_for_403(driver): time.sleep(30)
-            else: break
-        wait_for_element(driver, '#onetrust-accept-btn-handler', wait=3, click=True)
-        if "https://tickets.rugbyworldcup.com/en/user/login" in driver.current_url: login_page(driver, email, password)
-        if not alert(driver, link): continue
-        while True:
-            if check_for_captcha(driver): time.sleep(5)
-            else: break
-        while True:
-            if check_for_403(driver): time.sleep(30)
-            else: break
-        if "https://tickets.rugbyworldcup.com/en/user/login" in driver.current_url: login_page(driver, email, password)
-        check_for_element(driver, '//*[@data-filter="category"]', click=True, xpath=True)
-        check_for_element(driver, '//*[@class="filter-wrapper info-category"]//label[contains(text(),"Select all")]|//*[@class="filter-wrapper info-category"]//label[contains(text(),"Unselect all")]', click=True, xpath=True)
-        avctg = [int(re.compile('\d').findall(c.text)[-1]) for c in driver.find_elements(By.XPATH,
-                                                                                  '//*[@class="filter-wrapper info-category"]//*[@class="first-letter-cap"]')]
-        wanted = []
-        for key in categories.keys():
-           if key in avctg:
-              check_for_element(driver, f'//*[@class="filter-wrapper info-category"]//*[@class="first-letter-cap"][contains(text(),"Y {key}")]', click=True, xpath=True)
-              wanted.append(key)
-        if wanted == []: continue
-        check_for_element(driver, '//*[@class="filter-wrapper info-category"]//button[contains(text(),"Apply")][not(@disabled)]', click=True, xpath=True)
-        while True:
-            if check_for_captcha(driver): time.sleep(5)
-            else: break
-        while True:
-            if check_for_403(driver): time.sleep(30)
-            else: break
         try:
+            if not alert(driver, 'https://tickets.rugbyworldcup.com/en/user/login'): continue
+            while True:
+                if check_for_captcha(driver): time.sleep(5)
+                else: break
+            while True:
+                if check_for_403(driver): time.sleep(30)
+                else: break
+            wait_for_element(driver, '#onetrust-accept-btn-handler', wait=3, click=True)
+            if "https://tickets.rugbyworldcup.com/en/user/login" in driver.current_url: login_page(driver, email, password)
+            if not alert(driver, link): continue
+            while True:
+                if check_for_captcha(driver): time.sleep(5)
+                else: break
+            while True:
+                if check_for_403(driver): time.sleep(30)
+                else: break
+            if "https://tickets.rugbyworldcup.com/en/user/login" in driver.current_url: login_page(driver, email, password)
+            check_for_element(driver, '//*[@data-filter="category"]', click=True, xpath=True)
+            check_for_element(driver, '//*[@class="filter-wrapper info-category"]//label[contains(text(),"Select all")]|//*[@class="filter-wrapper info-category"]//label[contains(text(),"Unselect all")]', click=True, xpath=True)
+            avctg = [int(re.compile('\d').findall(c.text)[-1]) for c in driver.find_elements(By.XPATH,
+                                                                                    '//*[@class="filter-wrapper info-category"]//*[@class="first-letter-cap"]')]
+            wanted = []
+            for key, value in categories.items():
+                if not pd.notna(value): continue
+                if key in avctg:
+                    check_for_element(driver, f'//*[@class="filter-wrapper info-category"]//*[@class="first-letter-cap"][contains(text(),"Y {key}")]', click=True, xpath=True)
+                    wanted.append(key)
+            if wanted == []: continue
+            check_for_element(driver, '//*[@class="filter-wrapper info-category"]//button[contains(text(),"Apply")][not(@disabled)]', click=True, xpath=True)
+            while True:
+                if check_for_captcha(driver): time.sleep(5)
+                else: break
+            while True:
+                if check_for_403(driver): time.sleep(30)
+                else: break
+            
             tickets = driver.find_elements(By.CSS_SELECTOR, 'tr[role="row"]')
             if tickets == []:
                 time.sleep(3)
@@ -425,7 +425,8 @@ def main(link, categories):
                 raw_ticket = ticket.find_element(By.CSS_SELECTOR, 'td > div.pack-row-left > span.tickets-info').text
                 formatted_ticket = int(raw_ticket.split(' ')[0])
                 yn = []
-                for key in categories.keys():
+                for key, value in categories.items():
+                    if not pd.notna(value): continue
                     if formatted_category == key: yn.append(formatted_category)
                 if yn == []: continue 
                 if formatted_ticket >= int(categories[formatted_category]):
@@ -493,46 +494,35 @@ def main(link, categories):
 if __name__ == "__main__":
     matches_data = read_excel("./r.xlsx")
     threads = []
-    option = input('Choose one option [ONE|OPT]: ')
-    if option in ["all", "ALL"]: 
-        for row in matches_data:
-            link = row["link"]
-            if not pd.notna(link): continue
-            categories = row["categories"]
-            types = []
-            for value in categories.values():
-                if pd.notna(value): types.append(value)
-            if types == []: continue
-            match = row["match"]
-            thread = threading.Thread(target=main, args=(link, categories))
-            thread.start()
-            threads.append(thread)
-
-
-            delay = random.uniform(5, 10)
-            time.sleep(delay)
-        for thread in threads:
-            thread.join()
-    elif option in ['opt', 'OPT']:
-        for row_index in range(len(matches_data)):
-            link = matches_data[row_index]["link"]
-            if not pd.notna(link): continue
-            categories = matches_data[row_index]["categories"]
-            types = []
-            for value in categories.values():
-                if pd.notna(value): types.append(value)
-            if types == []: continue
-            match = matches_data[row_index]["match"]
-            print(row_index+2, match)
-        row_indexes= input('Indexes (separated by + symbol): ').split(' + ')
-        for row_index in range(len(row_indexes)):
-            link = matches_data[int(row_index)]['link']
-            categories = matches_data[int(row_index)]['categories']
+    for row_index in range(len(matches_data)):
+        link = matches_data[row_index]["link"]
+        if not pd.notna(link): continue
+        categories = matches_data[row_index]["categories"]
+        types = []
+        for value in categories.values():
+            if pd.notna(value): types.append(value)
+        if types == []: continue
+        match = matches_data[row_index]["match"]
+        print(row_index+2, match)
+    row_indexes= input('Indexes (separated by + symbol): ').split(' + ')
+    data = {"2": "Winner Pool C v Runner-Up Pool D",
+            "3": "Winner Pool B v Runner-Up Pool A",
+            "4": "Winner Pool D v Runner-Up Pool C",
+            "5": "Winner Pool A v Runner-Up Pool B",
+            "6": "Winner QF1 v Winner QF2",
+            "7": "Winner QF3 v Winner QF4",
+            "8": "Runner-Up SF1 v Runner-Up SF2",
+            "9": "Winner SF1 v Winner SF2"}
+    for row_index in row_indexes:
+        for match in matches_data:
+            if match['match'] != data[row_index]: continue
+            link = match['link']
+            categories = match['categories']
             thread = threading.Thread(target=main, args=(link,categories))
             thread.start()
             threads.append(thread)
 
-            delay = random.uniform(5, 10)
-            time.sleep(delay)
-        for thread in threads:
-            thread.join()
+        delay = random.uniform(5, 10)
+        time.sleep(delay)
+    for thread in threads:
+        thread.join()
