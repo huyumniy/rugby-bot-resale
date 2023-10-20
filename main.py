@@ -99,6 +99,7 @@ def read_proxy_file(file_path):
         proxy_lines = file.readlines()
     return proxy_lines
 
+
 def choose_random_proxy(proxy_lines):
     random_proxy = random.choice(proxy_lines).strip()
     domain, port, login, password = random_proxy.split(':')
