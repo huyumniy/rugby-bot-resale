@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rugby bot resale</title>
+    <script src="eel.js"></script>
+    <style>
+        body {
+            background: #1488CC;  /* fallback for old browsers */
+            background: -webkit-linear-gradient(to right, #2B32B2, #1488CC);  /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to right, #2B32B2, #1488CC); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+
+            color: aliceblue;
+            font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        .main {
+            height: 100vh;
+            margin: 0px 8rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            
+        }
+        .proxy {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+        input {
+            display: block;
+            border: none;
+            background: rgba(255, 255, 255, .5);
+            border-radius: 10px;
+            padding: 10px;
+            color: aliceblue;
+            outline: none;
+            width: 100%;
+            font-size: 16px;
+        }
+        .items {
+            display: flex;
+            width: 250px;
+            justify-content: space-between;
+        }
+        .items input {
+            height: 16px;
+            width: 16px;
+        }
+        #run {
+            margin-top: 200px;
+            height: 50px;
+            width: 190px;
+            font-size: 24px;
+            border-radius: 15px;
+            border: solid;
+            color:aliceblue;
+            background: #0F2027;  /* fallback for old browsers */
+            background: -webkit-linear-gradient(to right, #2C5364, #203A43, #0F2027);  /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to right, #2C5364, #203A43, #0F2027); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            cursor:pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="main">
+        <h1>Rugby bot resale</h1>
+        <div class="proxy">
+            <h3>proxy</h3>
+            <input type="text">
+        </div>
+        <h3>Matches</h3>
+        <div class="matches">
+            <form>
+                <div class="items">
+                    <label for="6">Winner QF1 v Winner QF2</label>
+                    <input id="6" type="checkbox">
+                </div>
+                <div class="items">
+                    <label for="7">Winner QF3 v Winner QF4</label>
+                    <input id="7" type="checkbox">
+                </div>
+                <div class="items">
+                    <label for="8">Runner-Up SF1 v Runner-Up SF2</label>
+                    <input id="8" type="checkbox">
+                </div>
+                <div class="items">
+                    <label for="9">Winner SF1 v Winner SF2</label>
+                    <input id="9" type="checkbox">
+                </div>
+            </form>
+            <div id="info"></div>
+        </div>
+        <button id="run">Start</button>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script type="text/javascript">
+        
+        async function start() {
+            let checkboxIds = [];
+            const items = document.querySelectorAll('.items');
+
+            items.forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+
+                if (checkbox.checked) {
+                    checkboxIds.push(checkbox.id);
+                }
+            });
+            if (checkboxIds.length == 0) stop()
+            let govnina = await eel.main(checkboxIds)();
+            
+        }
+        jQuery('#run').on('click', function() {
+            start();
+        });
+    </script>
+</body>
+</html>
