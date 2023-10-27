@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-import eel
-
-eel.init('web')
-
-eel.start('main.html', size=(700, 350))
-=======
 import undetected_chromedriver as webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -534,4 +527,4 @@ if __name__ == "__main__":
         time.sleep(delay)
     for thread in threads:
         thread.join()
->>>>>>> 543b862a5a137938cd4b05c24562d79e77ff5ef3
+

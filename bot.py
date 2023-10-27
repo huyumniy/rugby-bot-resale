@@ -11,6 +11,7 @@ import eel
 import soundfile as sf
 import sounddevice as sd
 import threading
+import socket
 import time
 import random
 import shutil
@@ -20,7 +21,6 @@ import requests
 import re
 import sys, os
 
-PROXY = ('proxy.soax.com', 9010,'Rx8vlf9yU7VeqsDW', 'wifi;fr;;;')
 
 
 class ProxyExtension:
@@ -80,8 +80,7 @@ class ProxyExtension:
         manifest_file = os.path.join(self._dir, "manifest.json")
         with open(manifest_file, mode="w") as f:
             f.write(self.manifest_json)
-
-        background_js = self.background_js % (host, port, user, password)
+        background_js = self.background_js % (host, int(port), user, password)
         background_file = os.path.join(self._dir, "background.js")
         with open(background_file, mode="w") as f:
             f.write(background_js)
@@ -105,7 +104,7 @@ def choose_random_proxy(proxy_lines):
     return (domain, int(port), login, password)
 
 
-def selenium_connect():
+def selenium_connect(proxy):
     options = webdriver.ChromeOptions()
     options.add_argument("--start-maximized")
     #options.add_argument("--incognito")
@@ -117,7 +116,7 @@ def selenium_connect():
     options.add_argument('--lang=EN')
     #pergfan:6ofKZOXwL7qSTGNZ@proxy.packetstream.io:31112
     # proxy = choose_random_proxy(read_proxy_file('./proxies.txt'))
-    proxy_extension = ProxyExtension(*PROXY)
+    proxy_extension = ProxyExtension(*(proxy.split(':')))
     # options.add_argument(f"--load-extension={proxy_extension.directory},D:\\projects\\rugby-bot-resale\\NopeCHA")
     options.add_argument(f"--load-extension={proxy_extension.directory},D:\\projects\\rugby-bot-resale\\NopeCHA")
 
@@ -372,9 +371,9 @@ def get_random_email_and_password(file_path):
     return random_email, random_password
 
 
-def start(link, categories):
-    driver = selenium_connect()
-    email, password = get_random_email_and_password('./accounts.txt')
+def start(link, categories, proxy, email, password):
+    driver = selenium_connect(proxy)
+    # email, password = get_random_email_and_password('./accounts.txt')
     print(email, password)
     while True:
         try:
@@ -491,44 +490,60 @@ def start(link, categories):
             if not alert(driver, link): continue
         
 @eel.expose
-def main(row_indexes):
-    print(row_indexes)
-    matches_data = read_excel("./r.xlsx")
-    threads = []
-    for row_index in range(len(matches_data)):
-        link = matches_data[row_index]["link"]
-        if not pd.notna(link): continue
-        categories = matches_data[row_index]["categories"]
-        types = []
-        for value in categories.values():
-            if pd.notna(value): types.append(value)
-        if types == []: continue
-        match = matches_data[row_index]["match"]
-    
-    data = {"2": "Winner Pool C v Runner-Up Pool D",
-            "3": "Winner Pool B v Runner-Up Pool A",
-            "4": "Winner Pool D v Runner-Up Pool C",
-            "5": "Winner Pool A v Runner-Up Pool B",
-            "6": "Winner QF1 v Winner QF2",
-            "7": "Winner QF3 v Winner QF4",
-            "8": "Runner-Up SF1 v Runner-Up SF2",
-            "9": "Winner SF1 v Winner SF2"}
-    
-    for row_index in row_indexes:
-        for match in matches_data:
-            if match['match'] != data[row_index]: continue
-            link = match['link']
-            categories = match['categories']
-            thread = threading.Thread(target=start, args=(link,categories))
-            thread.start()
-            threads.append(thread)
+def main(row_indexes, proxy, email, password):
+  matches_data = read_excel("./r.xlsx")
+  threads = []
+  for row_index in range(len(matches_data)):
+      link = matches_data[row_index]["link"]
+      if not pd.notna(link): continue
+      categories = matches_data[row_index]["categories"]
+      types = []
+      for value in categories.values():
+          if pd.notna(value): types.append(value)
+      if types == []: continue
+      match = matches_data[row_index]["match"]
+      
+  
+  data = {"2": "Winner QF1 v Winner QF2",
+          "3": "Winner QF3 v Winner QF4",
+          "4": "Runner-Up SF1 v Runner-Up SF2",
+          "5": "Winner SF1 v Winner SF2"}
+  
+  for row_index in row_indexes:
+      for match in matches_data:
+          if match['match'] != data[row_index]: continue
+          link = match['link']
+          categories = match['categories']
+          thread = threading.Thread(target=start, args=(link,categories, proxy, email, password))
+          thread.start()
+          threads.append(thread)
 
-        delay = random.uniform(5, 10)
-        time.sleep(delay)
-    for thread in threads:
-        thread.join()
+      delay = random.uniform(5, 10)
+      time.sleep(delay)
+  for thread in threads:
+      thread.join()
+
+
+def is_port_open(host, port):
+  try:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(1)
+    sock.connect((host, port))
+    return True
+  except (socket.timeout, ConnectionRefusedError):
+    return False
+  finally:
+    sock.close()
 
 
 if __name__ == "__main__":
-    eel.init('web')
-    eel.start('main.html', size=(600, 800))
+  eel.init('web')
+  port = 8000
+  while True:
+    try:
+      if not is_port_open('localhost', port):
+        eel.start('main.html', size=(600, 800), port=port)
+        break
+      else: port+=1
+    except OSError as e:
+      print(e)

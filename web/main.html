@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rugby bot resale</title>
+    <link rel="icon" type="image/x-icon" href="ico.ico?v=2"  />
     <script src="eel.js"></script>
     <style>
         body {
@@ -15,7 +16,7 @@
             font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
         .main {
-            height: 100vh;
+            height: 90vh;
             margin: 0px 8rem;
             display: flex;
             flex-direction: column;
@@ -31,16 +32,25 @@
             align-items: center;
             justify-content: center;
         }
+        .data {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
         input {
-            display: block;
+            display: flex;
             border: none;
             background: rgba(255, 255, 255, .5);
             border-radius: 10px;
             padding: 10px;
             color: aliceblue;
             outline: none;
-            width: 100%;
+            width: 250px;
             font-size: 16px;
+            color: #0F2027;
         }
         .items {
             display: flex;
@@ -52,17 +62,30 @@
             width: 16px;
         }
         #run {
-            margin-top: 200px;
+            margin-top: 100px;
             height: 50px;
             width: 190px;
             font-size: 24px;
             border-radius: 15px;
             border: solid;
-            color:aliceblue;
+        }
+
+        .active {
+            color:chartreuse;
             background: #0F2027;  /* fallback for old browsers */
             background: -webkit-linear-gradient(to right, #2C5364, #203A43, #0F2027);  /* Chrome 10-25, Safari 5.1-6 */
             background: linear-gradient(to right, #2C5364, #203A43, #0F2027); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
             cursor:pointer;
+            border: solid;
+        }
+
+
+        .disabled {
+            cursor: default;
+            border: none;
+            background: #0F2027;  /* fallback for old browsers */
+            background: -webkit-linear-gradient(to right, #2C5364, #203A43, #0F2027);  /* Chrome 10-25, Safari 5.1-6 */
+            background: linear-gradient(to right, #2C5364, #203A43, #0F2027); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
         }
     </style>
 </head>
@@ -70,37 +93,35 @@
     <div class="main">
         <h1>Rugby bot resale</h1>
         <div class="proxy">
-            <h3>proxy</h3>
-            <input type="text">
+            <h3>Proxy</h3>
+            <input id="proxy" type="text" placeholder="domain:port:login:pass">
+        </div>
+        <div class="data">
+            <h3>Data</h3>
+            <input id="email" type="email" placeholder="example@gmx.com">
+            <input id="password" type="password" placeholder="password">
         </div>
         <h3>Matches</h3>
         <div class="matches">
             <form>
                 <div class="items">
-                    <label for="6">Winner QF1 v Winner QF2</label>
-                    <input id="6" type="checkbox">
+                    <label for="4">Runner-Up SF1 v Runner-Up SF2</label>
+                    <input id="4" type="checkbox">
                 </div>
                 <div class="items">
-                    <label for="7">Winner QF3 v Winner QF4</label>
-                    <input id="7" type="checkbox">
-                </div>
-                <div class="items">
-                    <label for="8">Runner-Up SF1 v Runner-Up SF2</label>
-                    <input id="8" type="checkbox">
-                </div>
-                <div class="items">
-                    <label for="9">Winner SF1 v Winner SF2</label>
-                    <input id="9" type="checkbox">
+                    <label for="5">Winner SF1 v Winner SF2</label>
+                    <input id="5" type="checkbox">
                 </div>
             </form>
-            <div id="info"></div>
         </div>
-        <button id="run">Start</button>
+        <button id="run" class="disabled"></button>
+        <div id="info"></div>
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script type="text/javascript">
-        
-        async function start() {
+
+
+        function checkbox_checker() {
             let checkboxIds = [];
             const items = document.querySelectorAll('.items');
 
@@ -111,13 +132,52 @@
                     checkboxIds.push(checkbox.id);
                 }
             });
-            if (checkboxIds.length == 0) stop()
-            let govnina = await eel.main(checkboxIds)();
-            
+            return checkboxIds
         }
+
+        function set_disabled_checkboxes() {
+            const items = document.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+            checkbox.setAttribute('disabled', '');
+            checkbox.removeAttribute('active');
+         })}
+
+
+        async function start(button) {
+            if (button.getAttribute("class") == "active") {
+                button.innerHTML = '';
+                button.style.color = "#0F2027";
+                const proxy = document.querySelector('#proxy').value
+                const email = document.querySelector('#email').value
+                const password = document.querySelector('#password').value
+                console.log(proxy)
+                set_disabled_checkboxes();
+                await eel.main(checkbox_checker(), proxy, email, password)();
+            }
+        }
+
+
+        function main() {
+            const button = document.querySelector('#run');
+            if (button.innerHTML == "Start") start(button);
+        }
+
+
         jQuery('#run').on('click', function() {
-            start();
+            main();
         });
+
+        jQuery('input[type="checkbox"]').on('click', function() {
+            const checkboxIds = checkbox_checker()
+            let button = document.querySelector('#run')
+            if (checkboxIds.length == 0) {
+                button.innerHTML = ''
+                button.setAttribute('class', 'disabled')
+                
+            } else {
+                button.innerHTML = 'Start'
+                button.setAttribute('class', 'active')
+            }
+        })
     </script>
 </body>
 </html>

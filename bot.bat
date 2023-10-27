@@ -1,6 +1,6 @@
 @echo off
 
 call Scripts\activate.bat
-python main.py
+python bot.py
 
 pause
